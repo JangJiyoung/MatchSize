@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초등 1학년 크기 비교 게임</title>
+    <style>
+        /* 폰트 및 기본 스타일 */
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Jua', sans-serif;
+            background-color: #f0f8ff;
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* 공통 3D 버튼 스타일 */
+        .btn-3d {
+            padding: 20px 40px;
+            font-size: 2rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 20px;
+            background: #ffcc00;
+            box-shadow: 0 10px 0 #cca300;
+            transition: all 0.1s;
+            color: #444;
+        }
+        .btn-3d:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #cca300;
+        }
+
+        /* 화면 섹션 */
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; }
+        .active { display: flex; }
+
+        /* 플레이 화면 요소 */
+        #timer { font-size: 3rem; color: #ff4757; margin-bottom: 20px; }
+        .bar-container {
+            width: 80%; height: 60px;
+            background: #eee; border-radius: 30px;
+            margin: 20px 0; display: flex; justify-content: center; align-items: center;
+            position: relative; overflow: hidden;
+        }
+        .bar { height: 100%; border-radius: 30px; transition: width 0.1s ease; }
+        #ref-bar { background-color: #ff4757; } /* 기준 막대 (빨강) */
+        #player-bar { background-color: #1e90ff; } /* 학생 막대 (파랑) */
+        
+        /* 팝업 스타일 */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none; justify-content: center; align-items: center; z-index: 100;
+        }
+        .modal-content {
+            background: white; padding: 40px; border-radius: 30px; text-align: center;
+            max-width: 500px; width: 80%;
+        }
+        .teacher-img {
+            width: 150px; height: 150px; border-radius: 50%;
+            background: #ddd; margin-bottom: 20px; object-fit: cover;
+            border: 5px solid #ffcc00;
+        }
+        .msg { font-size: 1.5rem; margin-bottom: 30px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="screen active">
+        <h1 style="font-size: 3.5rem; color: #333; margin-bottom: 50px;">막대 크기 맞추기!</h1>
+        <button class="btn-3d" onclick="showMission()">게임 시작</button>
+    </div>
+
+    <div id="play-screen" class="screen">
+        <div id="timer">10.0</div>
+        <div style="font-size: 1.5rem; margin-bottom: 10px;">[기준]</div>
+        <div class="bar-container"><div id="ref-bar" class="bar"></div></div>
+        
+        <div style="height: 50px;"></div>
+
+        <div style="font-size: 1.5rem; margin-bottom: 10px;">[나]</div>
+        <div class="bar-container"><div id="player-bar" class="bar"></div></div>
+        <p style="font-size: 1.2rem; color: #666;">키보드 ← → 방향키를 눌러요!</p>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <img src="https://via.placeholder.com/150?text=Teacher" id="teacher-photo" class="teacher-img">
+            <div id="modal-msg" class="msg"></div>
+            <button id="modal-btn" class="btn-3d" style="font-size: 1.5rem;">확인</button>
+        </div>
+    </div>
+
+    <script>
+        const startScreen = document.getElementById('start-screen');
+        const playScreen = document.getElementById('play-screen');
+        const modal = document.getElementById('modal');
+        const modalMsg = document.getElementById('modal-msg');
+        const modalBtn = document.getElementById('modal-btn');
+        const refBar = document.getElementById('ref-bar');
+        const playerBar = document.getElementById('player-bar');
+        const timerDisplay = document.getElementById('timer');
+
+        let refWidth = 0;
+        let playerWidth = 0;
+        let timeLeft = 10.0;
+        let timerInterval;
+        let isGameActive = false;
+        let mode = ""; // "bigger" 또는 "smaller"
+
+        // 1. 미션 안내
+        function showMission() {
+            startScreen.classList.remove('active');
+            
+            // 랜덤 사이즈 설정
+            // 20% ~ 80% 사이로 랜덤하게 생성
+            refWidth = Math.floor(Math.random() * 60) + 20; 
+            playerWidth = Math.floor(Math.random() * 60) + 20;
+
+            // 로직 결정
+            if(refWidth > playerWidth) {
+                mode = "bigger";
+                modalMsg.innerHTML = `안녕! 반가워요!<br>빨간 막대가 파란 막대보다 <b>크네요!</b><br>파란 막대를 빨간 막대보다 <b>더 크게</b> 만들어볼까요?`;
+            } else {
+                mode = "smaller";
+                modalMsg.innerHTML = `안녕! 반가워요!<br>빨간 막대가 파란 막대보다 <b>작네요!</b><br>파란 막대를 빨간 막대보다 <b>더 작게</b> 만들어볼까요?`;
+            }
+
+            modal.style.display = 'flex';
+            modalBtn.onclick = startGame;
+        }
+
+        // 2. 게임 시작
+        function startGame() {
+            modal.style.display = 'none';
+            playScreen.classList.add('active');
+            
+            refBar.style.width = refWidth + "%";
+            playerBar.style.width = playerWidth + "%";
+            
+            timeLeft = 10.0;
+            isGameActive = true;
+
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.1;
+                timerDisplay.innerText = timeLeft.toFixed(1);
+                
+                checkMission();
+
+                if(timeLeft <= 0) {
+                    endGame(false);
+                }
+            }, 100);
+        }
+
+        // 3. 방향키 조작
+        window.addEventListener('keydown', (e) => {
+            if(!isGameActive) return;
+
+            if(e.key === 'ArrowLeft') {
+                playerWidth = Math.max(5, playerWidth - 2);
+            } else if(e.key === 'ArrowRight') {
+                playerWidth = Math.min(100, playerWidth + 2);
+            }
+            playerBar.style.width = playerWidth + "%";
+        });
+
+        // 4. 실시간 성공 체크
+        function checkMission() {
+            if(mode === "bigger" && playerWidth > refWidth) {
+                endGame(true);
+            } else if(mode === "smaller" && playerWidth < refWidth) {
+                endGame(true);
+            }
+        }
+
+        // 5. 게임 종료 (성공/실패)
+        function endGame(isSuccess) {
+            isGameActive = false;
+            clearInterval(timerInterval);
+
+            if(isSuccess) {
+                modalMsg.innerHTML = "우와! 정말 대단해요!<br>선생님은 너희가 해낼 줄 알았어! 👍";
+            } else {
+                modalMsg.innerHTML = "아쉬워요! 조금만 더 하면 할 수 있었는데..<br>한 번 더 도전해볼까요? 😊";
+            }
+
+            modal.style.display = 'flex';
+            modalBtn.innerText = "처음으로";
+            modalBtn.onclick = () => location.reload();
+        }
+    </script>
+</body>
+</html>
