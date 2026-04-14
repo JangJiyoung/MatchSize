@@ -14,7 +14,7 @@
             overflow: hidden;
             display: flex; justify-content: center; align-items: center;
             user-select: none;
-            touch-action: manipulation; /* 더블탭 줌 방지 */
+            touch-action: manipulation;
         }
 
         /* 3D 라운드 버튼 공통 스타일 */
@@ -46,16 +46,27 @@
         #ref-bar { background: linear-gradient(to bottom, #ff6b6b, #ee5253); } 
         #player-bar { background: linear-gradient(to bottom, #54a0ff, #2e86de); }
         
-        .label { font-size: 1.5rem; margin-top: 5px; color: #333; }
+        .label { font-size: 1.8rem; margin-top: 5px; color: #333; }
 
-        /* 모바일용 조작 버튼 영역 */
+        /* 핵심: 반응형 컨트롤 레이아웃 */
         .mobile-controls {
-            display: flex;
+            display: none; /* 기본적으로 PC에서는 숨김 */
             width: 90%;
             justify-content: space-between;
             margin-top: 30px;
             gap: 20px;
         }
+
+        /* 모바일/태블릿 환경(너비 768px 이하)일 때만 버튼 노출 */
+        @media screen and (max-width: 768px) {
+            .mobile-controls {
+                display: flex; 
+            }
+            .pc-tip {
+                display: none; /* 모바일에서는 키보드 안내 숨김 */
+            }
+        }
+
         .control-btn {
             flex: 1;
             padding: 20px 0;
@@ -101,6 +112,8 @@
         <div class="bar-container"><div id="player-bar" class="bar"></div></div>
         <div class="label">나의 막대 (파랑)</div>
 
+        <p class="pc-tip" style="font-size: 1.8rem; color: #7f8c8d; margin-top: 40px;">키보드 화살표 ←  → 를 눌러보세요!</p>
+
         <div class="mobile-controls">
             <button id="btn-left" class="btn-3d control-btn">작게 ←</button>
             <button id="btn-right" class="btn-3d control-btn">크게 →</button>
@@ -133,16 +146,16 @@
         let isGameActive = false, mode = "";
         let changeInterval = null;
 
-        // 버튼 3D 효과 함수
+        // JS 기반 버튼 눌림 효과 처리
         function applyButtonEffect(btn, callback) {
             const shadowSize = btn.classList.contains('control-btn') ? 8 : 10;
             const press = (e) => {
-                if(e) e.preventDefault();
+                if(e && e.cancelable) e.preventDefault();
                 btn.style.transform = `translateY(${shadowSize/2}px)`;
                 btn.style.boxShadow = `0 ${shadowSize/2}px 0 #cca300`;
             };
             const release = (e) => {
-                if(e) e.preventDefault();
+                if(e && e.cancelable) e.preventDefault();
                 btn.style.transform = 'translateY(0)';
                 btn.style.boxShadow = `0 ${shadowSize}px 0 #cca300`;
             };
@@ -154,11 +167,11 @@
             btn.addEventListener('touchend', (e) => { release(e); if(callback) callback(); });
         }
 
-        // 연속 크기 조절 함수 (모바일용)
+        // 모바일 버튼 연속 조작
         function setupContinuousControl(btn, delta) {
             const startChange = (e) => {
                 if(!isGameActive) return;
-                e.preventDefault();
+                if(e.cancelable) e.preventDefault();
                 if(changeInterval) clearInterval(changeInterval);
                 changeInterval = setInterval(() => {
                     playerWidth = Math.min(100, Math.max(5, playerWidth + delta));
@@ -188,10 +201,10 @@
             refWidth = 50; playerWidth = 50;
             if (Math.random() > 0.5) {
                 mode = "bigger";
-                modalMsg.innerHTML = "안녕! 선생님 막대보다 내 막대를<br><b>더 크게</b> 만들어보자!";
+                modalMsg.innerHTML = "안녕! 선생님 막대보다 내 막대를<br><b>더 크게</b> 만들어볼 수 있을까?";
             } else {
                 mode = "smaller";
-                modalMsg.innerHTML = "안녕! 선생님 막대보다 내 막대를<br><b>더 작게</b> 만들어보자!";
+                modalMsg.innerHTML = "안녕! 선생님 막대보다 내 막대를<br><b>더 작게</b> 만들어볼 수 있을까?";
             }
             modalConfirmBtn.innerText = "확인";
             modal.style.display = 'flex';
@@ -214,7 +227,6 @@
             }, 100);
         }
 
-        // 키보드 지원 유지
         window.addEventListener('keydown', (e) => {
             if (!isGameActive) return;
             if (e.key === 'ArrowLeft') playerWidth = Math.max(5, playerWidth - 2);
@@ -230,9 +242,13 @@
         function endGame(isSuccess) {
             isGameActive = false;
             clearInterval(timerInterval);
-            if (isSuccess) modalMsg.innerHTML = "<b>성공! 대단해요!</b><br>최고예요! 👍";
-            else modalMsg.innerHTML = "<b>시간이 다 됐어요...</b><br>다시 도전해볼까? 😊";
-            modalConfirmBtn.innerText = "처음으로";
+            if (isSuccess) {
+                modalMsg.innerHTML = "<b>성공! 대단해요!</b><br>우리 친구 정말 최고다!<br>선생님이 아주아주 기뻐요! 👍";
+            } else {
+                // 선배님이 요청하신 따뜻한 위로 메세지
+                modalMsg.innerHTML = "<b>괜찮아! 잘했어!</b><br>조금만 더 연습하면 금방 해낼 수 있어.<br>선생님은 우리 친구를 믿어! 😊";
+            }
+            modalConfirmBtn.innerText = "다시 하기";
             modal.style.display = 'flex';
         }
     </script>
