@@ -16,7 +16,7 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* 공통 3D 버튼 스타일 */
+        /* 3D 사각 버튼 스타일 (라운드 포함) */
         .btn-3d {
             padding: 20px 40px;
             font-size: 2rem;
@@ -27,6 +27,7 @@
             box-shadow: 0 10px 0 #cca300;
             transition: all 0.1s;
             color: #444;
+            outline: none;
         }
         .btn-3d:active {
             transform: translateY(5px);
@@ -38,18 +39,18 @@
         .active { display: flex; }
 
         /* 플레이 화면 요소 */
-        #timer { font-size: 3rem; color: #ff4757; margin-bottom: 20px; }
+        #timer { font-size: 3.5rem; color: #ff4757; margin-bottom: 20px; text-shadow: 2px 2px 0px white; }
         .bar-container {
-            width: 80%; height: 60px;
-            background: #eee; border-radius: 30px;
-            margin: 20px 0; display: flex; justify-content: center; align-items: center;
-            position: relative; overflow: hidden;
+            width: 80%; height: 70px;
+            background: #ffffff; border-radius: 35px;
+            margin: 15px 0; display: flex; justify-content: center; align-items: center;
+            position: relative; box-shadow: inset 0 5px 10px rgba(0,0,0,0.1);
         }
-        .bar { height: 100%; border-radius: 30px; transition: width 0.1s ease; }
+        .bar { height: 100%; border-radius: 35px; transition: width 0.1s ease; }
         #ref-bar { background-color: #ff4757; } /* 기준 막대 (빨강) */
         #player-bar { background-color: #1e90ff; } /* 학생 막대 (파랑) */
         
-        /* 팝업 스타일 */
+        /* 팝업 모달 스타일 */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7);
@@ -57,38 +58,42 @@
         }
         .modal-content {
             background: white; padding: 40px; border-radius: 30px; text-align: center;
-            max-width: 500px; width: 80%;
+            max-width: 600px; width: 85%; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
+        
+        /* 선생님 이미지 로드 스타일 */
         .teacher-img {
-            width: 150px; height: 150px; border-radius: 50%;
-            background: #ddd; margin-bottom: 20px; object-fit: cover;
-            border: 5px solid #ffcc00;
+            width: 200px; height: 200px; border-radius: 50%;
+            margin-bottom: 20px; object-fit: cover;
+            border: 8px solid #ffcc00;
+            background-color: #f9f9f9;
         }
-        .msg { font-size: 1.5rem; margin-bottom: 30px; line-height: 1.6; }
+        .msg { font-size: 1.8rem; margin-bottom: 30px; line-height: 1.5; color: #333; word-break: keep-all; }
+        b { color: #ff4757; }
     </style>
 </head>
 <body>
 
     <div id="start-screen" class="screen active">
-        <h1 style="font-size: 3.5rem; color: #333; margin-bottom: 50px;">막대 크기 맞추기!</h1>
-        <button class="btn-3d" onclick="showMission()">게임 시작</button>
+        <h1 style="font-size: 4rem; color: #333; margin-bottom: 50px; text-shadow: 3px 3px 0px #fff;">막대 크기 비교 놀이</h1>
+        <button class="btn-3d" onclick="showMission()">시작하기</button>
     </div>
 
     <div id="play-screen" class="screen">
         <div id="timer">10.0</div>
-        <div style="font-size: 1.5rem; margin-bottom: 10px;">[기준]</div>
+        <div style="font-size: 1.8rem; margin-bottom: 5px;">[선생님 막대]</div>
         <div class="bar-container"><div id="ref-bar" class="bar"></div></div>
         
-        <div style="height: 50px;"></div>
+        <div style="height: 60px;"></div>
 
-        <div style="font-size: 1.5rem; margin-bottom: 10px;">[나]</div>
+        <div style="font-size: 1.8rem; margin-bottom: 5px;">[나의 막대]</div>
         <div class="bar-container"><div id="player-bar" class="bar"></div></div>
-        <p style="font-size: 1.2rem; color: #666;">키보드 ← → 방향키를 눌러요!</p>
+        <p style="font-size: 1.4rem; color: #555; margin-top: 30px;">화살표 키보드(←, →)를 눌러보세요!</p>
     </div>
 
     <div id="modal" class="modal">
         <div class="modal-content">
-            <img src="https://via.placeholder.com/150?text=Teacher" id="teacher-photo" class="teacher-img">
+            <img src="img/teacher.png" id="teacher-photo" class="teacher-img" alt="선생님">
             <div id="modal-msg" class="msg"></div>
             <button id="modal-btn" class="btn-3d" style="font-size: 1.5rem;">확인</button>
         </div>
@@ -109,31 +114,30 @@
         let timeLeft = 10.0;
         let timerInterval;
         let isGameActive = false;
-        let mode = ""; // "bigger" 또는 "smaller"
+        let mode = ""; 
 
-        // 1. 미션 안내
+        // 미션 생성 및 안내
         function showMission() {
             startScreen.classList.remove('active');
             
-            // 랜덤 사이즈 설정
-            // 20% ~ 80% 사이로 랜덤하게 생성
-            refWidth = Math.floor(Math.random() * 60) + 20; 
-            playerWidth = Math.floor(Math.random() * 60) + 20;
+            // 랜덤 사이즈 생성 (20~80% 사이)
+            refWidth = Math.floor(Math.random() * 50) + 25; 
+            playerWidth = Math.floor(Math.random() * 50) + 25;
 
-            // 로직 결정
+            // 로직 분기
             if(refWidth > playerWidth) {
                 mode = "bigger";
-                modalMsg.innerHTML = `안녕! 반가워요!<br>빨간 막대가 파란 막대보다 <b>크네요!</b><br>파란 막대를 빨간 막대보다 <b>더 크게</b> 만들어볼까요?`;
+                modalMsg.innerHTML = "안녕! 내가 기준 막대보다<br><b>더 크게</b> 만들 수 있을까?";
             } else {
                 mode = "smaller";
-                modalMsg.innerHTML = `안녕! 반가워요!<br>빨간 막대가 파란 막대보다 <b>작네요!</b><br>파란 막대를 빨간 막대보다 <b>더 작게</b> 만들어볼까요?`;
+                modalMsg.innerHTML = "안녕! 내가 기준 막대보다<br><b>더 작게</b> 만들 수 있을까?";
             }
 
             modal.style.display = 'flex';
             modalBtn.onclick = startGame;
         }
 
-        // 2. 게임 시작
+        // 게임 시작
         function startGame() {
             modal.style.display = 'none';
             playScreen.classList.add('active');
@@ -146,29 +150,30 @@
 
             timerInterval = setInterval(() => {
                 timeLeft -= 0.1;
-                timerDisplay.innerText = timeLeft.toFixed(1);
-                
-                checkMission();
-
                 if(timeLeft <= 0) {
+                    timeLeft = 0;
+                    timerDisplay.innerText = "0.0";
                     endGame(false);
+                } else {
+                    timerDisplay.innerText = timeLeft.toFixed(1);
+                    checkMission();
                 }
             }, 100);
         }
 
-        // 3. 방향키 조작
+        // 키보드 이벤트
         window.addEventListener('keydown', (e) => {
             if(!isGameActive) return;
 
             if(e.key === 'ArrowLeft') {
-                playerWidth = Math.max(5, playerWidth - 2);
+                playerWidth = Math.max(5, playerWidth - 3);
             } else if(e.key === 'ArrowRight') {
-                playerWidth = Math.min(100, playerWidth + 2);
+                playerWidth = Math.min(100, playerWidth + 3);
             }
             playerBar.style.width = playerWidth + "%";
         });
 
-        // 4. 실시간 성공 체크
+        // 미션 성공 체크
         function checkMission() {
             if(mode === "bigger" && playerWidth > refWidth) {
                 endGame(true);
@@ -177,19 +182,19 @@
             }
         }
 
-        // 5. 게임 종료 (성공/실패)
+        // 게임 종료
         function endGame(isSuccess) {
             isGameActive = false;
             clearInterval(timerInterval);
 
             if(isSuccess) {
-                modalMsg.innerHTML = "우와! 정말 대단해요!<br>선생님은 너희가 해낼 줄 알았어! 👍";
+                modalMsg.innerHTML = "<b>성공!</b><br>우와, 정말 잘했어!<br>최고예요! 👍";
             } else {
-                modalMsg.innerHTML = "아쉬워요! 조금만 더 하면 할 수 있었는데..<br>한 번 더 도전해볼까요? 😊";
+                modalMsg.innerHTML = "<b>시간 초과!</b><br>아쉬워요, 선생님이랑<br>한 번 더 해볼까? 😊";
             }
 
             modal.style.display = 'flex';
-            modalBtn.innerText = "처음으로";
+            modalBtn.innerText = "다시 하기";
             modalBtn.onclick = () => location.reload();
         }
     </script>
